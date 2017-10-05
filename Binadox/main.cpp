@@ -8,8 +8,8 @@ volatile LONG DllRefCount=0;
 // DLL's HINSTANCE
 HINSTANCE hInstance=NULL;
 // GUID
-// {CF1A4F8F-71C4-4DFA-9724-14A18474D791}
-const GUID CLSID_IEPlugin = { 0xcf1a4f8f, 0x71c4, 0x4dfa,{ 0x97, 0x24, 0x14, 0xa1, 0x84, 0x74, 0xd7, 0x91 } };
+// {3543619C-D563-43f7-95EA-4DA7E1CC396A}
+const CLSID CLSID_IEPlugin = { 0x3543619c, 0xd563, 0x43f7,{ 0x95, 0xea, 0x4d, 0xa7, 0xe1, 0xcc, 0x39, 0x6a } }; // The CLSID in binary format
 
 // Called when the DLL is loaded into the process, attached or detached from a thread, and unloaded from the process
 BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved)

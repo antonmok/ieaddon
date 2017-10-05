@@ -81,6 +81,7 @@
     <Link>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>Winhttp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,6 +122,8 @@
   <ItemGroup>
     <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="EventSink.cpp" />
+    <ClCompile Include="Helpers.cpp" />
+    <ClCompile Include="HttpHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ObjectWithSite.cpp" />
   </ItemGroup>
@@ -131,6 +134,8 @@
     <ClInclude Include="ClassFactory.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="EventSink.h" />
+    <ClInclude Include="Helpers.h" />
+    <ClInclude Include="HttpHandler.h" />
     <ClInclude Include="ObjectWithSite.h" />
     <ClInclude Include="Unknown.h" />
   </ItemGroup>

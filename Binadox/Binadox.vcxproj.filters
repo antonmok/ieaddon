@@ -27,6 +27,12 @@
     <ClCompile Include="ObjectWithSite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HttpHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Helpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dll.def">
@@ -47,6 +53,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Unknown.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
