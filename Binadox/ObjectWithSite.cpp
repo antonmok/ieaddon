@@ -6,6 +6,8 @@
 #include "ObjectWithSite.h"
 #include "EventSink.h"
 
+#include "HttpHandler.h"
+
 const IID CObjectWithSite::SupportedIIDs[]={IID_IUnknown,IID_IObjectWithSite};
 
 CObjectWithSite::CObjectWithSite() : CUnknown<IObjectWithSite>(SupportedIIDs,2)
@@ -29,11 +31,14 @@ STDMETHODIMP CObjectWithSite::SetSite(IUnknown *pUnkSite)
 
 	if(pUnkSite) pUnkSite->AddRef(); // if a new site object is given, AddRef() it to make sure the object doesn't get deleted while we are working with it
 	DisconnectEventSink(); // disconnect any previous connection with IE
-	if(pUnkSite==NULL) return S_OK; // if only unsetting the site, return S_OK
+	if (pUnkSite == NULL) {
+		return S_OK; // if only unsetting the site, return S_OK
+	}
 	hr=pUnkSite->QueryInterface(IID_IWebBrowser2,(void**)&pSite); // query the site object for the IWebBrowser2 interface, from which we can access IE
 	pUnkSite->Release(); // we are done working with pUnkSite, so call Release() since we called AddRef() before
 	if(FAILED(hr)) return hr; // if we couldn't find the IWebBrowser2 interface, return the error
 	ConnectEventSink(); // connect the new connection with IE
+
 	return S_OK;
 }
 

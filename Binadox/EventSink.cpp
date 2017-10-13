@@ -2,12 +2,19 @@
  This file contains implementation of the DWebBrowserEvents2 dispatch interface.
 */
 
+//#include <initguid.h>
+
 #include "common.h"
 #include "EventSink.h"
 #include "HttpHandler.h"
 #include "Helpers.h"
+#include <Mshtml.h>
+#include <Shobjidl.h>
 
-#include "Shobjidl.h"
+#include <shlguid.h>
+#include <atlbase.h>
+
+#include "UIAutomationHelper.h"
 
 // The single global object of CEventSink
 CEventSink EventSink;
@@ -79,125 +86,65 @@ STDMETHODIMP CEventSink::Invoke(DISPID dispIdMember,REFIID riid,LCID lcid,WORD w
 	UNREFERENCED_PARAMETER(puArgErr);
 	VARIANT v[5]; // Used to hold converted event parameters before passing them onto the event handling method
 	int n;
-	bool b;
-	PVOID pv;
-	LONG lbound,ubound,sz;
 
 	if(!IsEqualIID(riid,IID_NULL)) return DISP_E_UNKNOWNINTERFACE; // riid should always be IID_NULL
+
+	/*if (&pDispParams->rgvarg == NULL) {
+		return S_OK;
+	}*/
+
+	if (firstCall) {
+		tabId = std::to_string(GetTabID());
+		macId = std::to_string(GetVolumeHash());
+
+		firstCall = false;
+	}
 
 	// Initialize the variants
 	for (n=0;n<5;n++) VariantInit(&v[n]);
 
-	switch (dispIdMember) { // Handle the BeforeNavigate2 event
+	switch (dispIdMember) {
 
-		case DISPID_BEFORENAVIGATE2: {
-			VariantChangeType(&v[0],&pDispParams->rgvarg[5],0,VT_BSTR); // url
-			VariantChangeType(&v[1],&pDispParams->rgvarg[4],0,VT_I4); // Flags
-			VariantChangeType(&v[2],&pDispParams->rgvarg[3],0,VT_BSTR); // TargetFrameName
-			VariantChangeType(&v[3],&pDispParams->rgvarg[2],0,VT_UI1|VT_ARRAY); // PostData
-			VariantChangeType(&v[4],&pDispParams->rgvarg[1],0,VT_BSTR); // Headers
+		case DISPID_ONQUIT: {
+			std::string data("OnQuit " + tabId);
+			DoHttp(data);
+			// generate new tab id
+			tabId = std::to_string(GetTabID());
 
-			if (v[3].vt!=VT_EMPTY) {
-				SafeArrayGetLBound(v[3].parray,0,&lbound);
-				SafeArrayGetUBound(v[3].parray,0,&ubound);
-				sz = ubound-lbound+1;
-				SafeArrayAccessData(v[3].parray,&pv);
-			} else {
-				sz=0;
-				pv=NULL;
-			}
-
-			b = Event_BeforeNavigate2((LPOLESTR)v[0].bstrVal, v[1].lVal, (LPOLESTR)v[2].bstrVal, (PUCHAR)pv, sz, (LPOLESTR)v[4].bstrVal, ((*(pDispParams->rgvarg[0].pboolVal)) != VARIANT_FALSE));
-
-			if (v[3].vt != VT_EMPTY) {
-				SafeArrayUnaccessData(v[3].parray);
-			}
-
-			if (b) {
-				*(pDispParams->rgvarg[0].pboolVal) = VARIANT_TRUE;
-			} else {
-				*(pDispParams->rgvarg[0].pboolVal) = VARIANT_FALSE;
-			}
+			break;
 		}
 
 		case DISPID_NEWWINDOW3: {
-			OutputDebugString(L"NewWindow\n");
-			
-			std::wstring urlDstW(pDispParams->rgvarg[0].bstrVal);
-			std::wstring urlSrcW(pDispParams->rgvarg[1].bstrVal);
-			std::string urlDst;
-			std::string urlSrc;
+			OutputDebugString(L"NewWindow3\n");
 
-			DWORD dwFlags = pDispParams->rgvarg[2].lVal;
-			std::string strFlags;
+			VariantChangeType(&v[0], &pDispParams->rgvarg[0], 0, VT_BSTR); // bstrUrl 
+			VariantChangeType(&v[1], &pDispParams->rgvarg[1], 0, VT_BSTR); // bstrUrlContext 
+			VariantChangeType(&v[2], &pDispParams->rgvarg[2], 0, VT_I4); // dwFlags 
 
-			if (dwFlags & NWMF_UNLOADING) {
-				strFlags.append("NWMF_UNLOADING ");
-			}
-			if (dwFlags & NWMF_USERINITED) {
-				strFlags.append("NWMF_USERINITED ");
-			}
-			if (dwFlags & NWMF_FIRST) {
-				strFlags.append("NWMF_FIRST ");
-			}
-			if (dwFlags & NWMF_OVERRIDEKEY) {
-				strFlags.append("NWMF_OVERRIDEKEY ");
-			}
-			if (dwFlags & NWMF_SHOWHELP) {
-				strFlags.append("NWMF_SHOWHELP ");
-			}
-			if (dwFlags & NWMF_HTMLDIALOG) {
-				strFlags.append("NWMF_HTMLDIALOG ");
-			}
-			if (dwFlags & NWMF_FROMDIALOGCHILD) {
-				strFlags.append("NWMF_FROMDIALOGCHILD ");
-			}
-			if (dwFlags & NWMF_USERREQUESTED) {
-				strFlags.append("NWMF_USERREQUESTED ");
-			}
-			if (dwFlags & NWMF_USERALLOWED) {
-				strFlags.append("NWMF_USERALLOWED ");
-			}
-			if (dwFlags & NWMF_FORCEWINDOW) {
-				strFlags.append("NWMF_FORCEWINDOW ");
-			}
-			if (dwFlags & NWMF_FORCETAB) {
-				strFlags.append("NWMF_FORCETAB ");
-			}
-			if (dwFlags & NWMF_SUGGESTWINDOW) {
-				strFlags.append("NWMF_SUGGESTWINDOW ");
-			}
-			if (dwFlags & NWMF_SUGGESTTAB) {
-				strFlags.append("NWMF_SUGGESTTAB ");
-			}
-			if (dwFlags & NWMF_INACTIVETAB) {
-				strFlags.append("NWMF_INACTIVETAB ");
-			}
+			OnNewWindow3(v[0], v[1], v[2]);
 
-			ws2s(urlDstW, urlDst);
-			ws2s(urlSrcW, urlSrc);
-
-			std::string data("NewWin: " + std::to_string(GetTabID()) + " flags: " + strFlags + " url_from: " + urlSrc + " url_to: " + urlDst);
-			DoHttp(data);
+			break;
 		}
 
 		case DISPID_WINDOWSTATECHANGED: {
 
-			DWORD dwMask = pDispParams->rgvarg[0].lVal;
-			DWORD dwFlags = pDispParams->rgvarg[1].lVal;
+			VariantChangeType(&v[0], &pDispParams->rgvarg[0], 0, VT_I4); // dwMask
+			VariantChangeType(&v[1], &pDispParams->rgvarg[1], 0, VT_I4); // dwFlags 
 
-			// We only care about WINDOWSTATE_USERVISIBLE.
-			if (dwMask & OLECMDIDF_WINDOWSTATE_USERVISIBLE) {
-				if (dwFlags & OLECMDIDF_WINDOWSTATE_USERVISIBLE) {
-					OutputDebugString(L"Visible\n");
-					std::string data("Visible: " + std::to_string(GetTabID()));
-					DoHttp(data);
-				} else {
-					OutputDebugString(L"Hidden\n");
-					std::string data("Hidden: " + std::to_string(GetTabID()) + " flags: " + std::to_string(dwFlags) + " mask: " + std::to_string(dwMask));
-					DoHttp(data);
-				}
-			}
+			OnWindowStateChanged(v[1], v[0]);
+
+			break;
+		}
+
+		case DISPID_DOCUMENTCOMPLETE: {
+			
+			VariantChangeType(&v[0], &pDispParams->rgvarg[0], 0, VT_BSTR); // bstrUrl 
+			VariantChangeType(&v[1], &pDispParams->rgvarg[1], 0, VT_DISPATCH); // bstrUrlContext 
+			IDispatch * pIDisp = v[1].pdispVal;
+
+			OnDocumentComplete(v[1].pdispVal, v[0]);
+
+			break;
 		}
 	}
 	
@@ -209,25 +156,112 @@ STDMETHODIMP CEventSink::Invoke(DISPID dispIdMember,REFIID riid,LCID lcid,WORD w
 	return S_OK;
 }
 
-// Return true to prevent the url from being opened
-bool CEventSink::Event_BeforeNavigate2(LPOLESTR url,LONG Flags,LPOLESTR TargetFrameName,PUCHAR PostData,LONG PostDataSize,LPOLESTR Headers,bool Cancel)
+void CEventSink::OnDocumentComplete(IDispatch *pDispWebBrowser, VARIANT bstrUrl)
 {
-	TCHAR urlStr[1024];
-	int len = wcslen(url);
-	
-	if (len > 1023) {
-		len = 1023;
+	std::wstring url(bstrUrl.bstrVal);
+
+	if (url.substr(0, 6) == L"about:" || url.substr(0, 11) == L"javascript:" || url.size() < 3) {
+		return;
 	}
 
-	//wsprintf(msg,_T("url=%ls\nFlags=0x%08X\nTargetFrameName=%ls\nPostData=%hs\nPostDataSize=%d\nHeaders=%ls\nCancel=%s"),url,Flags,TargetFrameName,(char*)PostData,PostDataSize,Headers,((Cancel)?(_T("true")):(_T("false"))));
-	wcsncpy_s(urlStr, url, len);
-	OutputDebugString(L"BeforeNavigate2 URL: ");
-	OutputDebugString(urlStr);
-	OutputDebugString(L"\n");
+	OutputDebugString(L"COMPLETE\n");
 
-	std::string data("Hello World!");
+	IDispatch* pDocDisp = NULL;
 
+	if (((IWebBrowser2*)pDispWebBrowser)->get_Document(&pDocDisp) == S_OK) {
+		IHTMLDocument2* pDoc = NULL;
+		if (pDocDisp->QueryInterface(IID_IHTMLDocument2, (void**)&pDoc) == S_OK) {
+			BSTR title;
+			pDoc->get_title(&title);
+			//MessageBox(0, title, NULL, MB_OK);
+		}
+	}
+	
+	std::string data;
+	ws2s(url, data);
+	data = "onComplete " + std::to_string((long)pDispWebBrowser) + " " + data + " " + tabId;
 	DoHttp(data);
+}
 
-	return Cancel;
+void CEventSink::OnNewWindow3(VARIANTARG& dstUrl, VARIANTARG& srcUrl, VARIANTARG& flags)
+{
+	std::wstring urlDstW(dstUrl.bstrVal);
+	std::wstring urlSrcW(srcUrl.bstrVal);
+
+	std::string urlDst;
+	std::string urlSrc;
+
+	/*DWORD dwFlags = flags.lVal;
+	std::string strFlags;
+
+	if (dwFlags & NWMF_UNLOADING) {
+		strFlags.append("NWMF_UNLOADING ");
+	}
+	if (dwFlags & NWMF_USERINITED) {
+		strFlags.append("NWMF_USERINITED ");
+	}
+	if (dwFlags & NWMF_FIRST) {
+		strFlags.append("NWMF_FIRST ");
+	}
+	if (dwFlags & NWMF_OVERRIDEKEY) {
+		strFlags.append("NWMF_OVERRIDEKEY ");
+	}
+	if (dwFlags & NWMF_SHOWHELP) {
+		strFlags.append("NWMF_SHOWHELP ");
+	}
+	if (dwFlags & NWMF_HTMLDIALOG) {
+		strFlags.append("NWMF_HTMLDIALOG ");
+	}
+	if (dwFlags & NWMF_FROMDIALOGCHILD) {
+		strFlags.append("NWMF_FROMDIALOGCHILD ");
+	}
+	if (dwFlags & NWMF_USERREQUESTED) {
+		strFlags.append("NWMF_USERREQUESTED ");
+	}
+	if (dwFlags & NWMF_USERALLOWED) {
+		strFlags.append("NWMF_USERALLOWED ");
+	}
+	if (dwFlags & NWMF_FORCEWINDOW) {
+		strFlags.append("NWMF_FORCEWINDOW ");
+	}
+	if (dwFlags & NWMF_FORCETAB) {
+		strFlags.append("NWMF_FORCETAB ");
+	}
+	if (dwFlags & NWMF_SUGGESTWINDOW) {
+		strFlags.append("NWMF_SUGGESTWINDOW ");
+	}
+	if (dwFlags & NWMF_SUGGESTTAB) {
+		strFlags.append("NWMF_SUGGESTTAB ");
+	}
+	if (dwFlags & NWMF_INACTIVETAB) {
+		strFlags.append("NWMF_INACTIVETAB ");
+	}*/
+
+	ws2s(urlDstW, urlDst);
+	ws2s(urlSrcW, urlSrc);
+
+	// generate new tab id
+	//tabId = std::to_string(GetTabID());
+
+	std::vector<std::wstring> tabs;
+
+	bool res = GetTabsList(tabs);
+
+	std::string data("NewWin: " + tabId + " url_from: " + urlSrc + " url_to: " + urlDst);
+	DoHttp(data);
+}
+
+void CEventSink::OnWindowStateChanged(VARIANT flags, VARIANT validFlagsMask)
+{
+	DWORD dwMask = validFlagsMask.lVal;
+	DWORD dwFlags = flags.lVal;
+
+	// We only care about WINDOWSTATE_USERVISIBLE.
+	if (dwMask & OLECMDIDF_WINDOWSTATE_USERVISIBLE) {
+		if (dwFlags & OLECMDIDF_WINDOWSTATE_USERVISIBLE) {
+			OutputDebugString(L"Visible\n");
+			std::string data("Visible: " + tabId);
+			DoHttp(data);
+		}
+	}
 }

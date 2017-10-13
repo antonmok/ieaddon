@@ -2,7 +2,7 @@
 
 #include <string>
 
-int GetTabID();
+long GetTabID();
 long GetVolumeHash();
 
 void s2ws(const std::string& str, std::wstring& outStr);

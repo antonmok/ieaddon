@@ -81,7 +81,7 @@
     <Link>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>Winhttp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Winhttp.lib;Oleacc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -126,6 +126,7 @@
     <ClCompile Include="HttpHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ObjectWithSite.cpp" />
+    <ClCompile Include="UIAutomationHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dll.def" />
@@ -137,6 +138,7 @@
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HttpHandler.h" />
     <ClInclude Include="ObjectWithSite.h" />
+    <ClInclude Include="UIAutomationHelper.h" />
     <ClInclude Include="Unknown.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

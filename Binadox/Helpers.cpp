@@ -4,12 +4,16 @@
 #include <locale>
 #include <codecvt>
 #include <iterator>
+#include <random>
 
-static int id_cnt = 0;
 
-int GetTabID()
+long GetTabID()
 {
-	return GetCurrentProcessId();
+	std::random_device rd;     // only used once to initialise (seed) engine
+	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+	std::uniform_int_distribution<int> uni(0, 1000); // guaranteed unbiased
+
+	return uni(rng);
 }
 
 long GetVolumeHash()
@@ -89,3 +93,62 @@ std::string base64_encode(BYTE const* buf, unsigned int bufLen)
 
 	return ret;
 }
+
+
+
+
+
+
+
+
+
+/*std::wstring GetName(IAccessible *pAcc)
+{
+CComBSTR bstrName;
+if (!pAcc || FAILED(pAcc->get_accName(CComVariant((int)CHILDID_SELF), &bstrName)) || !bstrName.m_str)
+return L"";
+
+return bstrName.m_str;
+}
+
+HRESULT WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc)
+{
+long childCount = 0;
+long returnCount = 0;
+
+HRESULT hr = pAcc->get_accChildCount(&childCount);
+
+if (childCount == 0)
+return S_OK;
+
+CComVariant* pArray = new CComVariant[childCount];
+hr = ::AccessibleChildren(pAcc, 0L, childCount, pArray, &returnCount);
+if (FAILED(hr))
+return hr;
+
+for (int x = 0; x < returnCount; x++) {
+CComVariant vtChild = pArray[x];
+if (vtChild.vt != VT_DISPATCH)
+continue;
+
+CComPtr<IDispatch> pDisp = vtChild.pdispVal;
+CComQIPtr<IAccessible> pAccChild = pDisp;
+if (!pAccChild)
+continue;
+
+std::wstring name = GetName(pAccChild).data();
+if (name.find(L"Адресная строка") != -1) {
+CComBSTR bstrValue;
+if (SUCCEEDED(pAccChild->get_accValue(CComVariant((int)CHILDID_SELF), &bstrValue)) && bstrValue.m_str)
+OutputDebugString(std::wstring(bstrValue.m_str).c_str());
+
+return S_FALSE;
+}
+
+if (WalkTreeWithAccessibleChildren(pAccChild) == S_FALSE)
+return S_FALSE;
+}
+
+delete[] pArray;
+return S_OK;
+}*/
